@@ -5,7 +5,9 @@ import (
 	"flag"
 	"log/slog"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/yaninyzwitty/chat/pkg/config"
+	"github.com/yaninyzwitty/chat/pkg/monitoring"
 )
 
 func main() {
@@ -23,5 +25,8 @@ func main() {
 		// fallback if no config path is given
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
+
+	reg := prometheus.NewRegistry()
+	monitoring.StartPrometheusServer(cfg, reg)
 
 }
