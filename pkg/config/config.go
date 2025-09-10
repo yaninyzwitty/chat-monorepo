@@ -3,15 +3,15 @@ package config
 import (
 	"os"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/yaninyzwitty/chat/pkg/util"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
 	Debug          bool           `yaml:"debug"`
 	AuthPort       int            `yaml:"authPort"`
 	UserPort       int            `yaml:"userPort"`
+	MetricsPort    int            `yaml:"metricsPort"`
 	DatabaseConfig DatabaseConfig `yaml:"db"`
 }
 
