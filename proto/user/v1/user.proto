@@ -1,0 +1,44 @@
+edition = "2023";
+
+package user.v1;
+import "google/protobuf/timestamp.proto";
+
+
+message User {
+    string id = 1;
+    string name = 2;
+    string alias_name = 3;
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp updated_at = 5;
+}
+
+message CreateUserRequest {
+    string name = 1;
+    string alias_name = 2;
+}
+
+message CreateUserResponse {
+    User user = 1;
+}
+
+message GetUserRequest {
+    string id = 1;
+}
+
+message GetUserResponse {
+    User user = 1;
+}
+
+message ListUsersRequest {
+    uint32 page_limit = 1;
+    bytes page_token = 2;
+}
+
+message ListUsersResponse {
+    repeated User user = 1;
+}
+service UserService {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUser (GetUserRequest) returns (GetUserResponse);
+    rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+}
