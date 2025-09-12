@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
 	"github.com/yaninyzwitty/chat/pkg/config"
@@ -51,7 +52,6 @@ func run(ctx context.Context) error {
 
 	if cfg.Debug {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
-
 	}
 
 	// Prometheus metrics
@@ -62,7 +62,15 @@ func run(ctx context.Context) error {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	userController := controller.NewUserController()
+	// start godotenv
+
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("Failed to load .env")
+	}
+
+	// Create controller with DB + metrics
+	dbToken := os.Getenv("ASTRA_DB_TOKEN")
+	userController := controller.NewUserController(ctx, cfg, reg, dbToken)
 	userv1.RegisterUserServiceServer(grpcServer, userController)
 
 	errorGroup, ctx := errgroup.WithContext(ctx)
@@ -90,7 +98,16 @@ func run(ctx context.Context) error {
 	errorGroup.Go(func() error {
 		<-ctx.Done() // wait for signal
 		slog.Info("shutting down gRPC server gracefully...")
+
+		// stop gRPC
 		grpcServer.GracefulStop()
+
+		// close DB
+		if userController.Db != nil {
+			userController.Db.Close()
+			slog.Info("closed Cassandra session")
+		}
+
 		return ctx.Err()
 	})
 
