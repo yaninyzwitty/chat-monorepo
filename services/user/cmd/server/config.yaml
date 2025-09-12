@@ -1,9 +1,0 @@
----
-debug: true
-authPort: 50051
-userPort: 50052
-metricsPort: 8081
-db:
-  username: token
-  path: ./secure-connect.zip
-  timeout: 30

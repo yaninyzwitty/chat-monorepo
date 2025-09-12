@@ -5,5 +5,5 @@ userPort: 50052
 metricsPort: 8081
 db:
   username: token
-  path: ./secure-connect.zip
+  path: ./secure-connect-chat.zip
   timeout: 30
