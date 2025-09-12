@@ -6,9 +6,9 @@ import (
 	"github.com/gocql/gocql"
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
-	"github.com/yaninyzwitty/chat/pkg/config"
-	"github.com/yaninyzwitty/chat/pkg/database"
-	"github.com/yaninyzwitty/chat/pkg/monitoring"
+	database "github.com/yaninyzwitty/chat/packages/db"
+	"github.com/yaninyzwitty/chat/packages/shared/config"
+	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
 )
 
 type UserController struct {

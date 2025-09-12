@@ -8,8 +8,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/yaninyzwitty/chat/pkg/config"
-	"github.com/yaninyzwitty/chat/pkg/util"
+	"github.com/yaninyzwitty/chat/packages/shared/config"
+	"github.com/yaninyzwitty/chat/packages/shared/util"
 )
 
 type Metrics struct {

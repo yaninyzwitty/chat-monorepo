@@ -6,8 +6,8 @@ import (
 
 	gocqlastra "github.com/datastax/gocql-astra"
 	"github.com/gocql/gocql"
-	"github.com/yaninyzwitty/chat/pkg/config"
-	"github.com/yaninyzwitty/chat/pkg/util"
+	"github.com/yaninyzwitty/chat/packages/shared/config"
+	"github.com/yaninyzwitty/chat/packages/shared/util"
 )
 
 func DbConnect(ctx context.Context, cfg *config.Config, token string) *gocql.Session {
