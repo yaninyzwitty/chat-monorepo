@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/yaninyzwitty/chat/pkg/util"
+	"github.com/yaninyzwitty/chat/packages/shared/util"
 	"gopkg.in/yaml.v3"
 )
 
