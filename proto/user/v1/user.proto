@@ -1,5 +1,4 @@
-edition = "2023";
-
+syntax = "proto3";
 package user.v1;
 import "google/protobuf/timestamp.proto";
 
@@ -35,7 +34,9 @@ message ListUsersRequest {
 }
 
 message ListUsersResponse {
-    repeated User user = 1;
+    repeated User users = 1;
+    bytes page_token = 2;
+
 }
 service UserService {
     rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
