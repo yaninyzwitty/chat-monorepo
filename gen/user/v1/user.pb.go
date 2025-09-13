@@ -24,11 +24,11 @@ const (
 
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Name          *string                `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
-	AliasName     *string                `protobuf:"bytes,3,opt,name=alias_name,json=aliasName" json:"alias_name,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt" json:"updated_at,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	AliasName     string                 `protobuf:"bytes,3,opt,name=alias_name,json=aliasName,proto3" json:"alias_name,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -64,22 +64,22 @@ func (*User) Descriptor() ([]byte, []int) {
 }
 
 func (x *User) GetId() string {
-	if x != nil && x.Id != nil {
-		return *x.Id
+	if x != nil {
+		return x.Id
 	}
 	return ""
 }
 
 func (x *User) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
+	if x != nil {
+		return x.Name
 	}
 	return ""
 }
 
 func (x *User) GetAliasName() string {
-	if x != nil && x.AliasName != nil {
-		return *x.AliasName
+	if x != nil {
+		return x.AliasName
 	}
 	return ""
 }
@@ -100,8 +100,8 @@ func (x *User) GetUpdatedAt() *timestamppb.Timestamp {
 
 type CreateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          *string                `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	AliasName     *string                `protobuf:"bytes,2,opt,name=alias_name,json=aliasName" json:"alias_name,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	AliasName     string                 `protobuf:"bytes,2,opt,name=alias_name,json=aliasName,proto3" json:"alias_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -137,22 +137,22 @@ func (*CreateUserRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateUserRequest) GetName() string {
-	if x != nil && x.Name != nil {
-		return *x.Name
+	if x != nil {
+		return x.Name
 	}
 	return ""
 }
 
 func (x *CreateUserRequest) GetAliasName() string {
-	if x != nil && x.AliasName != nil {
-		return *x.AliasName
+	if x != nil {
+		return x.AliasName
 	}
 	return ""
 }
 
 type CreateUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -196,7 +196,7 @@ func (x *CreateUserResponse) GetUser() *User {
 
 type GetUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            *string                `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -232,15 +232,15 @@ func (*GetUserRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetUserRequest) GetId() string {
-	if x != nil && x.Id != nil {
-		return *x.Id
+	if x != nil {
+		return x.Id
 	}
 	return ""
 }
 
 type GetUserResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          *User                  `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -284,8 +284,8 @@ func (x *GetUserResponse) GetUser() *User {
 
 type ListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PageLimit     *uint32                `protobuf:"varint,1,opt,name=page_limit,json=pageLimit" json:"page_limit,omitempty"`
-	PageToken     []byte                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	PageLimit     uint32                 `protobuf:"varint,1,opt,name=page_limit,json=pageLimit,proto3" json:"page_limit,omitempty"`
+	PageToken     []byte                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -321,8 +321,8 @@ func (*ListUsersRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListUsersRequest) GetPageLimit() uint32 {
-	if x != nil && x.PageLimit != nil {
-		return *x.PageLimit
+	if x != nil {
+		return x.PageLimit
 	}
 	return 0
 }
@@ -336,7 +336,8 @@ func (x *ListUsersRequest) GetPageToken() []byte {
 
 type ListUsersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	User          []*User                `protobuf:"bytes,1,rep,name=user" json:"user,omitempty"`
+	Users         []*User                `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	PageToken     []byte                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -371,9 +372,16 @@ func (*ListUsersResponse) Descriptor() ([]byte, []int) {
 	return file_user_v1_user_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ListUsersResponse) GetUser() []*User {
+func (x *ListUsersResponse) GetUsers() []*User {
 	if x != nil {
-		return x.User
+		return x.Users
+	}
+	return nil
+}
+
+func (x *ListUsersResponse) GetPageToken() []byte {
+	if x != nil {
+		return x.PageToken
 	}
 	return nil
 }
@@ -406,15 +414,17 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"page_limit\x18\x01 \x01(\rR\tpageLimit\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x02 \x01(\fR\tpageToken\"6\n" +
-	"\x11ListUsersResponse\x12!\n" +
-	"\x04user\x18\x01 \x03(\v2\r.user.v1.UserR\x04user2\xd6\x01\n" +
+	"page_token\x18\x02 \x01(\fR\tpageToken\"W\n" +
+	"\x11ListUsersResponse\x12#\n" +
+	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x02 \x01(\fR\tpageToken2\xd6\x01\n" +
 	"\vUserService\x12E\n" +
 	"\n" +
 	"CreateUser\x12\x1a.user.v1.CreateUserRequest\x1a\x1b.user.v1.CreateUserResponse\x12<\n" +
 	"\aGetUser\x12\x17.user.v1.GetUserRequest\x1a\x18.user.v1.GetUserResponse\x12B\n" +
 	"\tListUsers\x12\x19.user.v1.ListUsersRequest\x1a\x1a.user.v1.ListUsersResponseB\x86\x01\n" +
-	"\vcom.user.v1B\tUserProtoP\x01Z/github.com/yaninyzwitty/chat/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\beditionsp\xe8\a"
+	"\vcom.user.v1B\tUserProtoP\x01Z/github.com/yaninyzwitty/chat/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
 	file_user_v1_user_proto_rawDescOnce sync.Once
@@ -444,7 +454,7 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	7, // 1: user.v1.User.updated_at:type_name -> google.protobuf.Timestamp
 	0, // 2: user.v1.CreateUserResponse.user:type_name -> user.v1.User
 	0, // 3: user.v1.GetUserResponse.user:type_name -> user.v1.User
-	0, // 4: user.v1.ListUsersResponse.user:type_name -> user.v1.User
+	0, // 4: user.v1.ListUsersResponse.users:type_name -> user.v1.User
 	1, // 5: user.v1.UserService.CreateUser:input_type -> user.v1.CreateUserRequest
 	3, // 6: user.v1.UserService.GetUser:input_type -> user.v1.GetUserRequest
 	5, // 7: user.v1.UserService.ListUsers:input_type -> user.v1.ListUsersRequest
