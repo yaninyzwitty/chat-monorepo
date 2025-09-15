@@ -11,7 +11,8 @@ type Config struct {
 	Debug          bool           `yaml:"debug"`
 	AuthPort       int            `yaml:"authPort"`
 	UserPort       int            `yaml:"userPort"`
-	MetricsPort    int            `yaml:"metricsPort"`
+	MetricsPort1   int            `yaml:"metricsPort1"`
+	MetricsPort2   int            `yaml:"metricsPort2"`
 	DatabaseConfig DatabaseConfig `yaml:"db"`
 }
 

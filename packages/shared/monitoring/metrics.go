@@ -2,13 +2,11 @@
 package monitoring
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/util"
 )
 
@@ -45,11 +43,10 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 }
 
 // StartPrometheusServer launches an HTTP server for Prometheus scraping.
-func StartPrometheusServer(c *config.Config, reg *prometheus.Registry) {
+func StartPrometheusServer(reg *prometheus.Registry, addr string) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
-	addr := fmt.Sprintf(":%d", c.MetricsPort)
 	go func() {
 		slog.Info("[METRICS] Starting Prometheus Server on ", "addr", addr)
 		err := http.ListenAndServe(addr, mux)

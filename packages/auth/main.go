@@ -13,10 +13,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
-	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
+	"github.com/redis/go-redis/v9"
+	authv1 "github.com/yaninyzwitty/chat/gen/auth/v1"
+	"github.com/yaninyzwitty/chat/packages/auth/controller"
+	myJwt "github.com/yaninyzwitty/chat/packages/auth/jwt"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
-	"github.com/yaninyzwitty/chat/packages/user/controller"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -30,7 +32,6 @@ func main() {
 		syscall.SIGTERM,
 	)
 	defer stop()
-
 	if err := run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("error running application",
 			slog.String("error", err.Error()),
@@ -38,6 +39,7 @@ func main() {
 	}
 
 	slog.Info("server stopped cleanly")
+
 }
 
 func run(ctx context.Context) error {
@@ -54,8 +56,7 @@ func run(ctx context.Context) error {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
-	addr := fmt.Sprintf(":%d", cfg.MetricsPort2)
-	slog.Info("addr", "val", addr)
+	addr := fmt.Sprintf(":%d", cfg.MetricsPort1)
 	// Prometheus metrics
 	reg := prometheus.NewRegistry()
 	monitoring.StartPrometheusServer(reg, addr)
@@ -65,21 +66,26 @@ func run(ctx context.Context) error {
 	reflection.Register(grpcServer)
 
 	// start godotenv
-
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("Failed to load .env")
 	}
 
+	redisURL := os.Getenv("REDIS_URL")
+
+	redisClient := generateRedisClient(redisURL)
+
+	rts := myJwt.NewRefreshTokenStore(redisClient)
+
 	// Create controller with DB + metrics
 	dbToken := os.Getenv("ASTRA_DB_TOKEN")
-	userController := controller.NewUserController(ctx, cfg, reg, dbToken)
-	userv1.RegisterUserServiceServer(grpcServer, userController)
+	authController := controller.NewAuthController(ctx, cfg, reg, dbToken, rts)
+	authv1.RegisterAuthServiceServer(grpcServer, authController)
 
 	errorGroup, ctx := errgroup.WithContext(ctx)
 
 	// Start gRPC server goroutine
 	errorGroup.Go(func() error {
-		address := fmt.Sprintf(":%d", cfg.UserPort)
+		address := fmt.Sprintf(":%d", cfg.AuthPort)
 
 		lis, err := net.Listen("tcp", address)
 		if err != nil {
@@ -105,13 +111,20 @@ func run(ctx context.Context) error {
 		grpcServer.GracefulStop()
 
 		// close DB
-		if userController.Db != nil {
-			userController.Db.Close()
+		if authController.Db != nil {
+			authController.Db.Close()
 			slog.Info("closed Cassandra session")
 		}
 
 		return ctx.Err()
 	})
-
 	return errorGroup.Wait()
+
+}
+
+func generateRedisClient(redisUrl string) *redis.Client {
+	opt, _ := redis.ParseURL(redisUrl)
+	client := redis.NewClient(opt)
+	return client
+
 }
