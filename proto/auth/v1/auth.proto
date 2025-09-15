@@ -1,5 +1,4 @@
-edition = "2023";
-
+syntax = "proto3";
 package auth.v1;
 import "google/protobuf/timestamp.proto";
 
@@ -31,6 +30,7 @@ message LoginResponse {
 // refresh token
 message RefreshTokenRequest {
     string refresh_token = 1;
+    string user_id = 2;
 }
 
 message RefreshTokenResponse {
@@ -51,6 +51,7 @@ message ValidateTokenResponse {
 // Logout
 message LogoutRequest {
     string refresh_token = 1;
+    string user_id = 2;
 }
 
 message LogoutResponse {

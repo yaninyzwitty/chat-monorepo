@@ -11,9 +11,12 @@ message User {
     google.protobuf.Timestamp updated_at = 5;
 }
 
+// TODO-add email
+
 message CreateUserRequest {
     string name = 1;
     string alias_name = 2;
+
 }
 
 message CreateUserResponse {
