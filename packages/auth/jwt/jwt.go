@@ -18,12 +18,13 @@ var JwtKey = []byte(os.Getenv("JWT_AUTH_SECRET"))
 type Claims struct {
 	UserID   string   `json:"user_id"`
 	Username string   `json:"username"`
+	Email    string   `json:"email"`
 	Roles    []string `json:"roles"`
 	jwt.RegisteredClaims
 }
 
 // GenerateJWTPair generates a new access token and refresh token
-func GenerateJWTPair(userID, username string, roles []string) (*authv1.TokenPair, error) {
+func GenerateJWTPair(userID, username, email string, roles []string) (*authv1.TokenPair, error) {
 	now := time.Now()
 	exp := now.Add(60 * time.Minute)
 
@@ -31,6 +32,7 @@ func GenerateJWTPair(userID, username string, roles []string) (*authv1.TokenPair
 		UserID:   userID,
 		Username: username,
 		Roles:    roles,
+		Email:    email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(exp),
@@ -53,6 +55,7 @@ func GenerateJWTPair(userID, username string, roles []string) (*authv1.TokenPair
 	refreshClaims := &Claims{
 		UserID:   userID,
 		Username: username,
+		Email:    email,
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),

@@ -21,6 +21,7 @@ func AuthInterceptor() grpc.UnaryServerInterceptor {
 		"Login":        {},
 		"RefreshToken": {},
 		"Logout":       {},
+		"CreateUser":   {},
 	}
 
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
