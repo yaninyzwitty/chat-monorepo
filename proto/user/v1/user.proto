@@ -1,48 +1,48 @@
 syntax = "proto3";
+
 package user.v1;
+
 import "google/protobuf/timestamp.proto";
 
-
 message User {
-    string id = 1;
-    string name = 2;
-    string alias_name = 3;
-    google.protobuf.Timestamp created_at = 4;
-    google.protobuf.Timestamp updated_at = 5;
+  string id = 1;
+  string name = 2;
+  string alias_name = 3;
+  string email = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
 }
 
-// TODO-add email
-
 message CreateUserRequest {
-    string name = 1;
-    string alias_name = 2;
-
+  string name = 1;
+  string alias_name = 2;
+  string email = 3;
 }
 
 message CreateUserResponse {
-    User user = 1;
+  User user = 1;
 }
 
 message GetUserRequest {
-    string id = 1;
+  string id = 1;
 }
 
 message GetUserResponse {
-    User user = 1;
+  User user = 1;
 }
 
 message ListUsersRequest {
-    uint32 page_limit = 1;
-    bytes page_token = 2;
+  uint32 page_limit = 1;
+  bytes page_token = 2;
 }
 
 message ListUsersResponse {
-    repeated User users = 1;
-    bytes page_token = 2;
-
+  repeated User users = 1;
+  bytes page_token = 2;
 }
+
 service UserService {
-    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
-    rpc GetUser (GetUserRequest) returns (GetUserResponse);
-    rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
 }
