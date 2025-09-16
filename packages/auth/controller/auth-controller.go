@@ -11,6 +11,7 @@ import (
 	database "github.com/yaninyzwitty/chat/packages/db"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -48,7 +49,7 @@ func (c *AuthController) Login(ctx context.Context, req *authv1.LoginRequest) (*
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	tokens, err := myJwt.GenerateJWTPair(userID.String(), username, []string{"user"})
+	tokens, err := myJwt.GenerateJWTPair(userID.String(), username, req.Email, []string{"user"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
@@ -58,29 +59,49 @@ func (c *AuthController) Login(ctx context.Context, req *authv1.LoginRequest) (*
 }
 
 func (c *AuthController) RefreshToken(ctx context.Context, req *authv1.RefreshTokenRequest) (*authv1.RefreshTokenResponse, error) {
-	if req.RefreshToken == "" || req.UserId == "" {
+	if req.RefreshToken == "" || req.UserId == "" || req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, "refresh token and user id are required")
 	}
-
-	// TODO-- USE ERR GROUP FOR THESE TWO
-	valid, err := c.RefreshTokenStore.ValidateRefreshToken(ctx, req.UserId, req.RefreshToken)
-	if err != nil || !valid {
-		return nil, fmt.Errorf("invalid refresh token")
-	}
+	errorGroup, ctx := errgroup.WithContext(ctx)
 	var username string
-	query := "SELECT  username FROM users WHERE id = ? LIMIT 1"
-	if err := c.Db.Query(query, req.UserId).Consistency(gocql.One).Scan(&username); err != nil {
-		return nil, fmt.Errorf("invalid user")
+
+	// Validate refresh token
+	errorGroup.Go(func() error {
+		valid, err := c.RefreshTokenStore.ValidateRefreshToken(ctx, req.UserId, req.RefreshToken)
+		if err != nil {
+			return fmt.Errorf("failed to validate refresh token: %w", err)
+		}
+		if !valid {
+			return fmt.Errorf("invalid refresh token")
+		}
+		return nil
+	})
+
+	// Fetch username
+	errorGroup.Go(func() error {
+		query := "SELECT username FROM users WHERE id = ? LIMIT 1"
+		if err := c.Db.Query(query, req.UserId).
+			Consistency(gocql.One).
+			Scan(&username); err != nil {
+			return fmt.Errorf("invalid user: %w", err)
+		}
+		return nil
+	})
+
+	// Wait for both goroutines
+	if err := errorGroup.Wait(); err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	// Generate new access + refresh tokens
+	tokens, err := myJwt.GenerateJWTPair(req.UserId, username, req.Email, []string{"user"})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate access token: %v", err)
 	}
 
-	// Generate new access token
-	tokens, err := myJwt.GenerateJWTPair(req.UserId, username, []string{"user"})
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate access token: %w", err)
-	}
 	return &authv1.RefreshTokenResponse{
 		Tokens: tokens,
 	}, nil
+
 }
 
 func (c *AuthController) ValidateToken(ctx context.Context, req *authv1.ValidateTokenRequest) (*authv1.ValidateTokenResponse, error) {

@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	authv1 "github.com/yaninyzwitty/chat/gen/auth/v1"
 	"github.com/yaninyzwitty/chat/packages/auth/controller"
+	authjWT "github.com/yaninyzwitty/chat/packages/auth/jwt"
 	myJwt "github.com/yaninyzwitty/chat/packages/auth/jwt"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
@@ -62,7 +63,10 @@ func run(ctx context.Context) error {
 	monitoring.StartPrometheusServer(reg, addr)
 
 	// gRPC server setup
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		// auth interceptor
+		grpc.UnaryInterceptor(authjWT.AuthInterceptor()),
+	)
 	reflection.Register(grpcServer)
 
 	// start godotenv

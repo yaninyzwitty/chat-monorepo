@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
+	authjWT "github.com/yaninyzwitty/chat/packages/auth/jwt"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
 	"github.com/yaninyzwitty/chat/packages/user/controller"
@@ -61,7 +62,10 @@ func run(ctx context.Context) error {
 	monitoring.StartPrometheusServer(reg, addr)
 
 	// gRPC server setup
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		// auth interceptor
+		grpc.UnaryInterceptor(authjWT.AuthInterceptor()),
+	)
 	reflection.Register(grpcServer)
 
 	// start godotenv

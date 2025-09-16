@@ -36,7 +36,7 @@ func NewUserController(ctx context.Context, cfg *config.Config, reg *prometheus.
 
 // CreateUser inserts a new user into Cassandra
 func (c *UserController) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
-	if req.Name == "" || req.AliasName == "" {
+	if req.Name == "" || req.AliasName == "" || req.Email == "" {
 		return nil, status.Error(codes.InvalidArgument, "the user's name and alias name are required")
 	}
 
@@ -44,8 +44,8 @@ func (c *UserController) CreateUser(ctx context.Context, req *userv1.CreateUserR
 	now := time.Now()
 
 	err := c.Db.Query(
-		`INSERT INTO chat.users (id, name, alias_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-		userID, req.Name, req.AliasName, now, now,
+		`INSERT INTO chat.users (id, name, alias_name, created_at, updated_at, email) VALUES (?, ?, ?, ?, ?, ?)`,
+		userID, req.Name, req.AliasName, now, now, req.Email,
 	).Exec()
 	if err != nil {
 		util.Fail(err, "failed to add user to db %v", err)
@@ -56,6 +56,7 @@ func (c *UserController) CreateUser(ctx context.Context, req *userv1.CreateUserR
 		User: &userv1.User{
 			Id:        userID.String(),
 			Name:      req.Name,
+			Email:     req.Email,
 			AliasName: req.AliasName,
 			CreatedAt: timestamppb.New(now),
 			UpdatedAt: timestamppb.New(now),
@@ -77,14 +78,15 @@ func (c *UserController) GetUser(ctx context.Context, req *userv1.GetUserRequest
 	var (
 		name      string
 		aliasName string
+		email     string
 		createdAt time.Time
 		updatedAt time.Time
 	)
 
 	err = c.Db.Query(
-		`SELECT name, alias_name, created_at, updated_at FROM chat.users WHERE id = ?`,
+		`SELECT name, alias_name, created_at, updated_at, email FROM chat.users WHERE id = ?`,
 		userID,
-	).Consistency(gocql.One).Scan(&name, &aliasName, &createdAt, &updatedAt)
+	).Consistency(gocql.One).Scan(&name, &aliasName, &createdAt, &updatedAt, &email)
 
 	if err != nil {
 		if err == gocql.ErrNotFound {
@@ -98,6 +100,7 @@ func (c *UserController) GetUser(ctx context.Context, req *userv1.GetUserRequest
 			Id:        req.Id,
 			Name:      name,
 			AliasName: aliasName,
+			Email:     email,
 			CreatedAt: timestamppb.New(createdAt),
 			UpdatedAt: timestamppb.New(updatedAt),
 		},
@@ -112,7 +115,7 @@ func (c *UserController) ListUsers(ctx context.Context, req *userv1.ListUsersReq
 	}
 
 	q := c.Db.Query(
-		`SELECT id, name, alias_name, created_at, updated_at FROM chat.users`,
+		`SELECT id, name, alias_name, created_at, updated_at, email FROM chat.users`,
 	).PageSize(pageSize)
 
 	if len(req.GetPageToken()) > 0 {
@@ -129,15 +132,17 @@ func (c *UserController) ListUsers(ctx context.Context, req *userv1.ListUsersReq
 		aliasName string
 		createdAt time.Time
 		updatedAt time.Time
+		email     string
 	)
 
-	for iter.Scan(&id, &name, &aliasName, &createdAt, &updatedAt) {
+	for iter.Scan(&id, &name, &aliasName, &createdAt, &updatedAt, &email) {
 		users = append(users, &userv1.User{
 			Id:        id.String(),
 			Name:      name,
 			AliasName: aliasName,
 			CreatedAt: timestamppb.New(createdAt),
 			UpdatedAt: timestamppb.New(updatedAt),
+			Email:     email,
 		})
 	}
 

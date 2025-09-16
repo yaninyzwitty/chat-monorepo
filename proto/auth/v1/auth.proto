@@ -31,6 +31,7 @@ message LoginResponse {
 message RefreshTokenRequest {
     string refresh_token = 1;
     string user_id = 2;
+    string email = 3;
 }
 
 message RefreshTokenResponse {
