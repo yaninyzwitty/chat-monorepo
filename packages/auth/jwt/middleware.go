@@ -14,15 +14,15 @@ type contextKey string
 
 const UserContextKey contextKey = "user"
 
+var publicRoutes = map[string]struct{}{
+	"Login":        {},
+	"RefreshToken": {},
+	"Logout":       {},
+	"CreateUser":   {},
+}
+
 // AuthInterceptor returns a gRPC unary interceptor for authentication
 func AuthInterceptor() grpc.UnaryServerInterceptor {
-	// define public routes (no auth required)
-	publicRoutes := map[string]struct{}{
-		"Login":        {},
-		"RefreshToken": {},
-		"Logout":       {},
-		"CreateUser":   {},
-	}
 
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		// gRPC full method is /package.Service/Method
