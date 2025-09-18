@@ -45,8 +45,8 @@ func (r *RefreshTokenStore) CreateRefreshToken(ctx context.Context, userID int64
 
 }
 
-func (r *RefreshTokenStore) CreateOrGetRefreshToken(ctx context.Context, userID int64) (string, error) {
-	key := fmt.Sprintf("refresh:%d", userID)
+func (r *RefreshTokenStore) CreateOrGetRefreshToken(ctx context.Context, userID string) (string, error) {
+	key := fmt.Sprintf("refresh:%s", userID)
 
 	// Try to get existing token
 	val, err := r.Redis.Get(ctx, key).Result()

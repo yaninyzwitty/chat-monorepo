@@ -51,32 +51,15 @@ func GenerateJWTPair(userID, username, email string, roles []string) (*authv1.To
 	}
 
 	// generate refresh token (longer expiration)
-	refreshExp := now.Add(7 * 24 * time.Hour) // 7 days
-	refreshClaims := &Claims{
-		UserID:   userID,
-		Username: username,
-		Email:    email,
-		Roles:    roles,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(refreshExp),
-			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    "chat",
-			Subject:   "refresh-token",
-			Audience:  jwt.ClaimStrings{"chat"},
-			ID:        uuid.New().String(),
-		},
-	}
 
-	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(JwtKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign refresh token: %w", err)
-	}
+	// refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(JwtKey)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to sign refresh token: %w", err)
+	// }
 
 	return &authv1.TokenPair{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    timestamppb.New(exp),
+		AccessToken: accessToken,
+		ExpiresAt:   timestamppb.New(exp),
 	}, nil
 }
 

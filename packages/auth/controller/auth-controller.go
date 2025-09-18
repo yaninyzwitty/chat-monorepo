@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/prometheus/client_golang/prometheus"
@@ -11,6 +12,7 @@ import (
 	database "github.com/yaninyzwitty/chat/packages/db"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,37 +39,60 @@ func NewAuthController(ctx context.Context, cfg *config.Config, reg *prometheus.
 	return c
 }
 
+// --- LOGIN ---
 func (c *AuthController) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.LoginResponse, error) {
-	if req.Email == "" {
+	start := time.Now()
+	const op = "login"
+
+	if req.Email == "" || req.Password == "" {
 		return nil, status.Error(codes.InvalidArgument, "email is required")
 	}
-	var userID gocql.UUID
-	var username string
 
-	query := "SELECT id, username FROM users WHERE email = ? LIMIT 1"
-	if err := c.Db.Query(query, req.Email).Consistency(gocql.One).Scan(&userID, &username); err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+	var userID gocql.UUID
+	var username, hashedPassword string
+
+	query := "SELECT id, name, password FROM chat.users WHERE email = ? LIMIT 1"
+	if err := c.Db.Query(query, req.Email).Consistency(gocql.One).Scan(&userID, &username, &hashedPassword); err != nil {
+		c.observeError(op, "cassandra")
+		return nil, status.Errorf(codes.Internal, "invalid credentials %v", err)
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
+		c.observeError(op, "bcrypt")
+		return nil, status.Errorf(codes.Internal, "failed to compare hash and password %v", err)
 	}
 
 	tokens, err := myJwt.GenerateJWTPair(userID.String(), username, req.Email, []string{"user"})
 	if err != nil {
+		c.observeError(op, "jwt")
 		return nil, fmt.Errorf("failed to generate tokens: %w", err)
 	}
-	return &authv1.LoginResponse{
-		Tokens: tokens,
-	}, nil
+
+	refreshToken, err := c.RefreshTokenStore.CreateOrGetRefreshToken(ctx, userID.String())
+	if err != nil {
+		c.observeError(op, "redis")
+		return nil, status.Errorf(codes.Unauthenticated, "failed to create or get refresh token %v", err)
+	}
+	tokens.RefreshToken = refreshToken
+
+	c.observeDuration(op, "cassandra", start)
+	return &authv1.LoginResponse{Tokens: tokens}, nil
 }
 
+// --- REFRESH TOKEN ---
 func (c *AuthController) RefreshToken(ctx context.Context, req *authv1.RefreshTokenRequest) (*authv1.RefreshTokenResponse, error) {
-	if req.RefreshToken == "" || req.UserId == "" || req.Email == "" {
+	start := time.Now()
+	const op = "refresh_token"
+
+	if req.RefreshToken == "" || req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "refresh token and user id are required")
 	}
-	errorGroup, ctx := errgroup.WithContext(ctx)
-	var username string
 
-	// Validate refresh token
-	errorGroup.Go(func() error {
-		valid, err := c.RefreshTokenStore.ValidateRefreshToken(ctx, req.UserId, req.RefreshToken)
+	eg, egCtx := errgroup.WithContext(ctx)
+	var username, email string
+
+	eg.Go(func() error {
+		valid, err := c.RefreshTokenStore.ValidateRefreshToken(egCtx, req.UserId, req.RefreshToken)
 		if err != nil {
 			return fmt.Errorf("failed to validate refresh token: %w", err)
 		}
@@ -77,39 +102,50 @@ func (c *AuthController) RefreshToken(ctx context.Context, req *authv1.RefreshTo
 		return nil
 	})
 
-	// Fetch username
-	errorGroup.Go(func() error {
-		query := "SELECT username FROM users WHERE id = ? LIMIT 1"
+	eg.Go(func() error {
+		query := "SELECT name, email FROM chat.users WHERE id = ? LIMIT 1"
 		if err := c.Db.Query(query, req.UserId).
 			Consistency(gocql.One).
-			Scan(&username); err != nil {
+			Scan(&username, &email); err != nil {
 			return fmt.Errorf("invalid user: %w", err)
 		}
 		return nil
 	})
 
-	// Wait for both goroutines
-	if err := errorGroup.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
+		c.observeError(op, "cassandra")
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
-	// Generate new access + refresh tokens
-	tokens, err := myJwt.GenerateJWTPair(req.UserId, username, req.Email, []string{"user"})
+
+	tokens, err := myJwt.GenerateJWTPair(req.UserId, username, email, []string{"user"})
 	if err != nil {
+		c.observeError(op, "jwt")
 		return nil, status.Errorf(codes.Internal, "failed to generate access token: %v", err)
 	}
 
-	return &authv1.RefreshTokenResponse{
-		Tokens: tokens,
-	}, nil
+	refreshToken, err := c.RefreshTokenStore.CreateOrGetRefreshToken(ctx, req.UserId)
+	if err != nil {
+		c.observeError(op, "redis")
+		return nil, status.Errorf(codes.Unauthenticated, "failed to create or get refresh token %v", err)
+	}
+	tokens.RefreshToken = refreshToken
 
+	c.observeDuration(op, "cassandra", start)
+	return &authv1.RefreshTokenResponse{Tokens: tokens}, nil
 }
 
+// --- VALIDATE TOKEN ---
 func (c *AuthController) ValidateToken(ctx context.Context, req *authv1.ValidateTokenRequest) (*authv1.ValidateTokenResponse, error) {
+	start := time.Now()
+	const op = "validate_token"
+
 	claims, err := myJwt.ValidateJWT(req.AccessToken)
 	if err != nil {
+		c.observeError(op, "jwt")
 		return &authv1.ValidateTokenResponse{Valid: false}, nil
 	}
 
+	c.observeDuration(op, "jwt", start)
 	return &authv1.ValidateTokenResponse{
 		Valid: true,
 		Claims: &authv1.Claims{
@@ -122,15 +158,29 @@ func (c *AuthController) ValidateToken(ctx context.Context, req *authv1.Validate
 	}, nil
 }
 
+// --- LOGOUT ---
 func (c *AuthController) Logout(ctx context.Context, req *authv1.LogoutRequest) (*authv1.LogoutResponse, error) {
+	start := time.Now()
+	const op = "logout"
+
 	if req.RefreshToken == "" || req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "refresh token and user id required")
-
 	}
 
 	if err := c.RefreshTokenStore.DeleteRefreshToken(ctx, req.UserId); err != nil {
+		c.observeError(op, "redis")
 		return &authv1.LogoutResponse{Success: false}, fmt.Errorf("failed to delete refresh token: %w", err)
 	}
-	return &authv1.LogoutResponse{Success: true}, nil
 
+	c.observeDuration(op, "redis", start)
+	return &authv1.LogoutResponse{Success: true}, nil
+}
+
+// --- helpers for metrics ---
+func (c *AuthController) observeDuration(op, db string, start time.Time) {
+	c.M.Duration.WithLabelValues(op, db).Observe(time.Since(start).Seconds())
+}
+
+func (c *AuthController) observeError(op, db string) {
+	c.M.Errors.WithLabelValues(op, db).Inc()
 }
