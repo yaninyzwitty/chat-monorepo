@@ -10,7 +10,7 @@ import (
 	database "github.com/yaninyzwitty/chat/packages/db"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
-	"github.com/yaninyzwitty/chat/packages/shared/util"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,24 +34,35 @@ func NewUserController(ctx context.Context, cfg *config.Config, reg *prometheus.
 	return c
 }
 
-// CreateUser inserts a new user into Cassandra
+// --- CREATE USER ---
 func (c *UserController) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
-	if req.Name == "" || req.AliasName == "" || req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, "the user's name and alias name are required")
+	start := time.Now()
+	const op = "create_user"
+
+	if req.Name == "" || req.AliasName == "" || req.Email == "" || req.Password == "" {
+		return nil, status.Error(codes.InvalidArgument, "name, alias name, email, and password are required")
+	}
+
+	// hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.observeError(op, "bcrypt")
+		return nil, status.Error(codes.Internal, "failed to hash password")
 	}
 
 	userID := gocql.TimeUUID()
 	now := time.Now()
 
-	err := c.Db.Query(
-		`INSERT INTO chat.users (id, name, alias_name, created_at, updated_at, email) VALUES (?, ?, ?, ?, ?, ?)`,
-		userID, req.Name, req.AliasName, now, now, req.Email,
-	).Exec()
-	if err != nil {
-		util.Fail(err, "failed to add user to db %v", err)
+	// insert into Cassandra
+	if err := c.Db.Query(
+		`INSERT INTO chat.users (id, name, alias_name, created_at, updated_at, email, password) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		userID, req.Name, req.AliasName, now, now, req.Email, string(hashedPassword),
+	).Exec(); err != nil {
+		c.observeError(op, "cassandra")
 		return nil, status.Errorf(codes.Internal, "failed to insert user: %v", err)
 	}
 
+	c.observeDuration(op, "cassandra", start)
 	return &userv1.CreateUserResponse{
 		User: &userv1.User{
 			Id:        userID.String(),
@@ -64,8 +75,11 @@ func (c *UserController) CreateUser(ctx context.Context, req *userv1.CreateUserR
 	}, nil
 }
 
-// GetUser retrieves a user by UUID
+// --- GET USER ---
 func (c *UserController) GetUser(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
+	start := time.Now()
+	const op = "get_user"
+
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "user id is required")
 	}
@@ -89,12 +103,14 @@ func (c *UserController) GetUser(ctx context.Context, req *userv1.GetUserRequest
 	).Consistency(gocql.One).Scan(&name, &aliasName, &createdAt, &updatedAt, &email)
 
 	if err != nil {
+		c.observeError(op, "cassandra")
 		if err == gocql.ErrNotFound {
 			return nil, status.Error(codes.NotFound, "user not found")
 		}
 		return nil, status.Errorf(codes.Internal, "failed to query user: %v", err)
 	}
 
+	c.observeDuration(op, "cassandra", start)
 	return &userv1.GetUserResponse{
 		User: &userv1.User{
 			Id:        req.Id,
@@ -107,11 +123,14 @@ func (c *UserController) GetUser(ctx context.Context, req *userv1.GetUserRequest
 	}, nil
 }
 
-// ListUsers retrieves paginated users
+// --- LIST USERS ---
 func (c *UserController) ListUsers(ctx context.Context, req *userv1.ListUsersRequest) (*userv1.ListUsersResponse, error) {
+	start := time.Now()
+	const op = "list_users"
+
 	pageSize := int(req.GetPageLimit())
 	if pageSize <= 0 {
-		pageSize = 10 // default
+		pageSize = 10
 	}
 
 	q := c.Db.Query(
@@ -148,11 +167,22 @@ func (c *UserController) ListUsers(ctx context.Context, req *userv1.ListUsersReq
 
 	nextPage := iter.PageState()
 	if err := iter.Close(); err != nil {
+		c.observeError(op, "cassandra")
 		return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
 	}
 
+	c.observeDuration(op, "cassandra", start)
 	return &userv1.ListUsersResponse{
 		Users:     users,
 		PageToken: nextPage, // requires proto update
 	}, nil
+}
+
+// --- metrics helpers ---
+func (c *UserController) observeDuration(op, db string, start time.Time) {
+	c.M.Duration.WithLabelValues(op, db).Observe(time.Since(start).Seconds())
+}
+
+func (c *UserController) observeError(op, db string) {
+	c.M.Errors.WithLabelValues(op, db).Inc()
 }
