@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/gocql/gocql"
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
@@ -30,7 +31,7 @@ func NewUserController(ctx context.Context, cfg *config.Config, reg *prometheus.
 		M:      m,
 	}
 
-	c.Db = database.DbConnect(ctx, cfg, token)
+	c.Db = database.DbConnect(ctx, cfg, token, "", nat.Port(0))
 	return c
 }
 
