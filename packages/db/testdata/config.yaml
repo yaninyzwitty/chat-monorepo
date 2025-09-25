@@ -1,0 +1,4 @@
+cluster_name: 'TestCluster'
+num_tokens: 1
+start_rpc: false
+endpoint_snitch: GossipingPropertyFileSnitch
