@@ -1,0 +1,17 @@
+name: Pull request
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref}}
+  cancel-in-progress: true #when another pr of same kind is made, the prev one is canceled
+
+on:
+  pull_request:
+    
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+    
