@@ -19,8 +19,10 @@ type Config struct {
 type DatabaseConfig struct {
 	Username string `yaml:"username"`
 	// path to secure-connect.zip
-	Path    string `yaml:"path"`
-	Timeout int    `yaml:"timeout"`
+	Path        string `yaml:"path"`
+	Timeout     int    `yaml:"timeout"`
+	Local_Host  string `yaml:"localHost"`
+	LocalDBPort int    `yaml:"localDBPort"`
 }
 
 // LoadConfig loads a YAML config file into the receiver.

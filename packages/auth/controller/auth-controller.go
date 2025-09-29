@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/gocql/gocql"
 	"github.com/prometheus/client_golang/prometheus"
 	authv1 "github.com/yaninyzwitty/chat/gen/auth/v1"
@@ -36,7 +35,7 @@ func NewAuthController(ctx context.Context, cfg *config.Config, reg *prometheus.
 		RefreshTokenStore: rts,
 	}
 
-	c.Db = database.DbConnect(ctx, cfg, token, "", nat.Port(0))
+	c.Db = database.ConnectAstra(cfg, token)
 	return c
 }
 
