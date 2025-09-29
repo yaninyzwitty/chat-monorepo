@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/gocql/gocql"
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
@@ -31,8 +30,16 @@ func NewUserController(ctx context.Context, cfg *config.Config, reg *prometheus.
 		M:      m,
 	}
 
-	c.Db = database.DbConnect(ctx, cfg, token, "", nat.Port(0))
+	// use token only if you are using serverless cassandra
+	if token != "" {
+		c.Db = database.ConnectAstra(cfg, token)
+		return c
+	} else {
+		// use this for testing
+		c.Db = database.ConnectLocal(cfg.DatabaseConfig.Local_Host, cfg.DatabaseConfig.LocalDBPort)
+	}
 	return c
+
 }
 
 // --- CREATE USER ---

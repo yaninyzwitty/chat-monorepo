@@ -8,3 +8,6 @@ db:
   username: token
   path: ./secure-connect-chat.zip
   timeout: 30
+  # TODO-check if they must be here
+  localHost: 127.0.0.1
+  localDBPort: 9092
