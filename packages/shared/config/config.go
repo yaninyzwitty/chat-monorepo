@@ -1,9 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/yaninyzwitty/chat/packages/shared/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,12 +26,17 @@ type DatabaseConfig struct {
 }
 
 // LoadConfig loads a YAML config file into the receiver.
-func (c *Config) LoadConfig(path string) {
+func (c *Config) LoadConfig(path string) error {
 	// read the file by the path
 	f, err := os.ReadFile(path)
-	util.Fail(err, "failed to read config")
+	if err != nil {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
 
 	err = yaml.Unmarshal(f, c)
-	util.Fail(err, "failed to parse config")
+	if err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
+	}
 
+	return nil
 }
