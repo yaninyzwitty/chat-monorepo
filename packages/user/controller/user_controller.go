@@ -150,7 +150,10 @@ func (c *UserController) ListUsers(ctx context.Context, req *userv1.ListUsersReq
 	}
 
 	iter := q.Iter()
-	defer iter.Close()
+	if err := iter.Close(); err != nil {
+		c.observeError(op, "cassandra")
+		return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
+	}
 
 	var users []*userv1.User
 	var (

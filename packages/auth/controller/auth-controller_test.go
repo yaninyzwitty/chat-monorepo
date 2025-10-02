@@ -61,7 +61,9 @@ func TestLogin(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	defer conn.Close()
+	if err := conn.Close(); err != nil {
+		t.Logf("error closing connection: %v", err)
+	}
 
 	client := authv1.NewAuthServiceClient(conn)
 
