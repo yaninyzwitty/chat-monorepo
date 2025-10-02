@@ -48,7 +48,9 @@ func run(ctx context.Context) error {
 
 	cfg := &config.Config{}
 	if *cp != "" {
-		cfg.LoadConfig(*cp)
+		if err := cfg.LoadConfig(*cp); err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
 	}
 
 	if cfg.Debug {
