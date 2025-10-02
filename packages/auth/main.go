@@ -16,8 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	authv1 "github.com/yaninyzwitty/chat/gen/auth/v1"
 	"github.com/yaninyzwitty/chat/packages/auth/controller"
-	authjWT "github.com/yaninyzwitty/chat/packages/auth/jwt"
-	myJwt "github.com/yaninyzwitty/chat/packages/auth/jwt"
+	"github.com/yaninyzwitty/chat/packages/auth/jwt"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
 	"golang.org/x/sync/errgroup"
@@ -38,9 +37,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 	}
-
 	slog.Info("server stopped cleanly")
-
 }
 
 func run(ctx context.Context) error {
@@ -50,12 +47,13 @@ func run(ctx context.Context) error {
 
 	cfg := &config.Config{}
 	if *cp != "" {
-		cfg.LoadConfig(*cp)
+		if err := cfg.LoadConfig(*cp); err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
 	}
 
-	if cfg.Debug {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	}
+	// Set up logging (add custom handler if you want debug output)
+	// if cfg.Debug { ... }
 
 	addr := fmt.Sprintf(":%d", cfg.MetricsPort1)
 	// Prometheus metrics
@@ -64,8 +62,7 @@ func run(ctx context.Context) error {
 
 	// gRPC server setup
 	grpcServer := grpc.NewServer(
-		// auth interceptor
-		grpc.UnaryInterceptor(authjWT.AuthInterceptor()),
+		grpc.UnaryInterceptor(jwt.AuthInterceptor()),
 	)
 	reflection.Register(grpcServer)
 
@@ -75,13 +72,22 @@ func run(ctx context.Context) error {
 	}
 
 	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		return errors.New("REDIS_URL environment variable is not set")
+	}
 
-	redisClient := generateRedisClient(redisURL)
+	redisClient, err := generateRedisClient(redisURL)
+	if err != nil {
+		return fmt.Errorf("failed to create redis client: %w", err)
+	}
 
-	rts := myJwt.NewRefreshTokenStore(redisClient)
+	rts := jwt.NewRefreshTokenStore(redisClient)
 
 	// Create controller with DB + metrics
 	dbToken := os.Getenv("ASTRA_DB_TOKEN")
+	if dbToken == "" {
+		return errors.New("ASTRA_DB_TOKEN environment variable is not set")
+	}
 	authController := controller.NewAuthController(ctx, cfg, reg, dbToken, rts)
 	authv1.RegisterAuthServiceServer(grpcServer, authController)
 
@@ -90,16 +96,13 @@ func run(ctx context.Context) error {
 	// Start gRPC server goroutine
 	errorGroup.Go(func() error {
 		address := fmt.Sprintf(":%d", cfg.AuthPort)
-
 		lis, err := net.Listen("tcp", address)
 		if err != nil {
 			return fmt.Errorf("failed to listen on %q: %w", address, err)
 		}
-
 		slog.Info("starting [gRPC] user service",
 			slog.String("address", address),
 		)
-
 		if err := grpcServer.Serve(lis); err != nil {
 			return fmt.Errorf("failed to serve gRPC service: %w", err)
 		}
@@ -114,7 +117,7 @@ func run(ctx context.Context) error {
 		// stop gRPC
 		grpcServer.GracefulStop()
 
-		// close DB
+		// close DB (make sure this is correct for your controller)
 		if authController.Db != nil {
 			authController.Db.Close()
 			slog.Info("closed Cassandra session")
@@ -123,12 +126,13 @@ func run(ctx context.Context) error {
 		return ctx.Err()
 	})
 	return errorGroup.Wait()
-
 }
 
-func generateRedisClient(redisUrl string) *redis.Client {
-	opt, _ := redis.ParseURL(redisUrl)
+func generateRedisClient(redisUrl string) (*redis.Client, error) {
+	opt, err := redis.ParseURL(redisUrl)
+	if err != nil {
+		return nil, err
+	}
 	client := redis.NewClient(opt)
-	return client
-
+	return client, nil
 }
