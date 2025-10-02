@@ -9,7 +9,6 @@ on:
 
 env:
   GO_VERSION: stable
-  GOLANGCI_LINT_VERSION: v2.1
 
 jobs:
   detect-modules:
@@ -43,12 +42,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/golangci-lint
-          key: golangci-lint-${{ runner.os }}-${{ env.GOLANGCI_LINT_VERSION }}-${{ matrix.modules }}
+          key: golangci-lint-${{ runner.os }}-${{ matrix.modules }}
           restore-keys: |
-            golangci-lint-${{ runner.os }}-${{ env.GOLANGCI_LINT_VERSION }}-
+            golangci-lint-${{ runner.os }}-${{ matrix.modules }}
 
       - name: golangci-lint ${{ matrix.modules }}
         uses: golangci/golangci-lint-action@v8
         with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          version: latest
           working-directory: ${{ matrix.modules }}
