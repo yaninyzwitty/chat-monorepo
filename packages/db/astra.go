@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	LOCAL_PORT = 9092
+	LOCAL_PORT = 9042
 	LOCAL_HOST = "127.0.0.1"
 )
 
