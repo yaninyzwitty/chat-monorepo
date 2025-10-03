@@ -85,7 +85,10 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 	}
 
 	iter := q.Iter()
-	defer iter.Close()
+	if err := iter.Close(); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to close iter: %v", err)
+
+	}
 
 	var users []*userv1.User
 	var (
