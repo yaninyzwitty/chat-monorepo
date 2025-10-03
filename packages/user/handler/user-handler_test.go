@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -23,8 +22,9 @@ import (
 )
 
 var (
-	testDB  *gocql.Session
-	cleanup DBCleanupFunc
+	testDB    *gocql.Session
+	cleanup   DBCleanupFunc
+	cqlScript = "../../db/testdata/init.cql"
 )
 
 type DBCleanupFunc func(ctx context.Context) error
@@ -80,18 +80,10 @@ func CreateTestDB(ctx context.Context) (*gocql.Session, DBCleanupFunc, error) {
 }
 
 func createTestContainer(ctx context.Context) (*cassandra.CassandraContainer, error) {
-	workingDir, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory: %w", err)
-	}
-
-	repoRoot := filepath.Join(workingDir, "..", "..")
-	cqlScripts := filepath.Join(repoRoot, "packages", "db", "testdata", "init.cql")
-
 	cassandraContainer, err := cassandra.Run(
 		ctx,
 		"cassandra:4.1.3",
-		cassandra.WithInitScripts(cqlScripts),
+		cassandra.WithInitScripts(cqlScript),
 		testcontainers.WithWaitStrategy(wait.ForLog("Starting server on port 9042")),
 	)
 	if err != nil {
