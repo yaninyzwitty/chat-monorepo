@@ -67,7 +67,7 @@ jobs:
         run: go build ./...
 
   unit-test:
-    needs: build
+    needs: [detect-modules, build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -83,7 +83,7 @@ jobs:
         run: go test -v -short ./...
 
   integration-test:
-    needs: build
+    needs: [detect-modules, build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
