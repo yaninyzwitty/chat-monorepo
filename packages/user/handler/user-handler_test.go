@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -84,7 +85,8 @@ func createTestContainer(ctx context.Context) (*cassandra.CassandraContainer, er
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	cqlScripts := workingDir + "/packages/db/testdata/init.cql"
+	repoRoot := filepath.Join(workingDir, "..", "..")
+	cqlScripts := filepath.Join(repoRoot, "packages", "db", "testdata", "init.cql")
 
 	cassandraContainer, err := cassandra.Run(
 		ctx,
