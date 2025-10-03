@@ -72,6 +72,8 @@ jobs:
     strategy:
       matrix:
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    env:
+      CASSANDRA_LOCAL: "true"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
