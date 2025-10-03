@@ -11,4 +11,4 @@ db:
   # Todo check if they must be here
   # for local testing
   localHost: 127.0.0.1
-  localDBPort: 9092
+  localDBPort: 9042

@@ -38,7 +38,7 @@ func NewAuthController(ctx context.Context, cfg *config.Config, reg *prometheus.
 
 	if os.Getenv("CASSANDRA_LOCAL") == "true" {
 		// Use the same host/port as your test setup
-		c.Db = database.ConnectLocal("127.0.0.1", 9092)
+		c.Db = database.ConnectLocal("127.0.0.1", 9042)
 	} else {
 		c.Db = database.ConnectAstra(cfg, token)
 	}
