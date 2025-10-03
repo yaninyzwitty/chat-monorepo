@@ -84,6 +84,7 @@ func createTestContainer(ctx context.Context) (*cassandra.CassandraContainer, er
 		ctx,
 		"cassandra:4.1.3",
 		cassandra.WithInitScripts(cqlScript),
+		// TODO-remove if it keeps failing
 		testcontainers.WithWaitStrategy(wait.ForLog("Starting listening for CQL clients on /0.0.0.0:9042")),
 	)
 	if err != nil {
