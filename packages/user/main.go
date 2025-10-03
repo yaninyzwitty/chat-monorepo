@@ -15,6 +15,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	userv1 "github.com/yaninyzwitty/chat/gen/user/v1"
 	authjWT "github.com/yaninyzwitty/chat/packages/auth/jwt"
+	database "github.com/yaninyzwitty/chat/packages/db"
 	"github.com/yaninyzwitty/chat/packages/shared/config"
 	"github.com/yaninyzwitty/chat/packages/shared/monitoring"
 	"github.com/yaninyzwitty/chat/packages/user/controller"
@@ -78,7 +79,12 @@ func run(ctx context.Context) error {
 
 	// Create controller with DB + metrics
 	dbToken := os.Getenv("ASTRA_DB_TOKEN")
-	userController := controller.NewUserController(ctx, cfg, reg, dbToken)
+	if dbToken == "" {
+		return errors.New("ASTRA_DB_TOKEN environment variable is not set")
+	}
+	
+	db := database.ConnectAstra(cfg, dbToken)
+	userController := controller.NewUserController(ctx, cfg, reg, dbToken, db)
 	userv1.RegisterUserServiceServer(grpcServer, userController)
 
 	errorGroup, ctx := errgroup.WithContext(ctx)
@@ -111,8 +117,8 @@ func run(ctx context.Context) error {
 		grpcServer.GracefulStop()
 
 		// close DB
-		if userController.Db != nil {
-			userController.Db.Close()
+		if db != nil {
+			db.Close()
 			slog.Info("closed Cassandra session")
 		}
 
