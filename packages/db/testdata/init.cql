@@ -1,22 +1,26 @@
--- Create a keyspace for testing
-CREATE KEYSPACE IF NOT EXISTS test_keyspace
+-- Create keyspace
+CREATE KEYSPACE IF NOT EXISTS chat
 WITH replication = {
   'class': 'SimpleStrategy',
   'replication_factor': '1'
 };
 
-USE test_keyspace;
+USE chat;
 
--- Create a simple table
+-- Users table matching Go handler
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     name TEXT,
-    email TEXT
+    alias_name TEXT,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    email TEXT,
+    password TEXT
 );
 
--- Insert some sample rows
-INSERT INTO users (id, name, email)
-VALUES (uuid(), 'Alice', 'alice@example.com');
+-- Optional: Insert some seed rows
+INSERT INTO users (id, name, alias_name, created_at, updated_at, email, password)
+VALUES (uuid(), 'Alice', 'ali', toTimestamp(now()), toTimestamp(now()), 'alice@example.com', 'pass123');
 
-INSERT INTO users (id, name, email)
-VALUES (uuid(), 'Bob', 'bob@example.com');
+INSERT INTO users (id, name, alias_name, created_at, updated_at, email, password)
+VALUES (uuid(), 'Bob', 'bobby', toTimestamp(now()), toTimestamp(now()), 'bob@example.com', 'pass456');
