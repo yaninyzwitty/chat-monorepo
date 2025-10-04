@@ -3,9 +3,13 @@ package database
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"testing"
+	"time"
 
+	"github.com/gocql/gocql"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
 )
 
@@ -14,20 +18,25 @@ func TestCassandra(t *testing.T) {
 	cassandraContainer, err := cassandra.Run(context.Background(), "cassandra:4.1.3")
 	require.NoError(t, err)
 
-	// check the container state
-	state, err := cassandraContainer.State(ctx)
-	require.NoError(t, err)
-	require.True(t, state.Running) // ensure its in running state
+	// Cleanup on exit
+	defer func() {
+		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
+			slog.Error("failed to terminate container", "error", err)
+		}
+	}()
 
-	// get connection info
-	connectionHost, err := cassandraContainer.Host(ctx)
-	require.NoError(t, err)
-
-	connectionPort, err := cassandraContainer.MappedPort(ctx, "9042")
+	connectionHost, err := cassandraContainer.ConnectionHost(ctx)
 	require.NoError(t, err)
 
-	// connect directly
-	session := ConnectLocal(connectionHost, connectionPort.Int())
+	// Connect to Cassandra via gocql
+	cluster := gocql.NewCluster(connectionHost)
+	cluster.Keyspace = "system" // make sure this matches your init.cql
+	cluster.Consistency = gocql.Quorum
+	cluster.Timeout = 30 * time.Second
+	cluster.ConnectTimeout = 30 * time.Second
+	session, err := cluster.CreateSession()
+	require.NoError(t, err)
+
 	defer session.Close()
 
 	// query
