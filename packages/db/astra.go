@@ -35,8 +35,10 @@ func ConnectAstra(cfg *config.Config, token string) *gocql.Session {
 }
 
 func ConnectLocal(host string, port int) *gocql.Session {
-
-	cluster := gocql.NewCluster(LOCAL_HOST)
+	if host == "" {
+		host = LOCAL_HOST
+	}
+	cluster := gocql.NewCluster(host)
 	cluster.Port = LOCAL_PORT
 	cluster.Keyspace = "system" // system is alreasdy created will ease in testing
 	cluster.Consistency = gocql.Quorum
