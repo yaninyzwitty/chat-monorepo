@@ -22,6 +22,7 @@ func ConnectAstra(cfg *config.Config, token string) *gocql.Session {
 		token,
 		30*time.Second, // bundle read timeout
 	)
+
 	util.Fail(err, "unable to load bundle")
 
 	// set session timeout

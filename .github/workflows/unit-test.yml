@@ -1,0 +1,96 @@
+name: Test workflow [Go Unit Tests - Monorepo]
+
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        description: "Go version to use"
+        required: false
+        type: string
+        default: "1.23"
+      run_coverage:
+        description: "Generate coverage report"
+        required: false
+        type: string
+        default: "true"
+      enable_race_detector:
+        description: "Enable Go race detector"
+        required: false
+        type: string
+        default: "true"
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: ${{ inputs.go_version }}
+
+jobs:
+  detect-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # ✅ Detect all Go modules across the repo
+      - name: Detect Go Modules
+        id: set-modules
+        shell: bash
+        run: |
+          MODULES=$(find . -name 'go.mod' -not -path '*/vendor/*' -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')
+          echo "Detected modules: $MODULES"
+          echo "modules=$MODULES" >> $GITHUB_OUTPUT
+
+  unit-tests:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Cache Go Build & Module Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-${{ runner.os }}-${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ env.GO_VERSION }}-
+
+      - name: Run Unit Tests for ${{ matrix.module }}
+        working-directory: ${{ matrix.module }}
+        shell: bash
+        run: |
+          FLAGS=""
+          if [[ "${{ inputs.enable_race_detector }}" == "true" ]]; then
+            FLAGS="$FLAGS -race"
+          fi
+
+          if [[ "${{ inputs.run_coverage }}" == "true" ]]; then
+            echo "Running tests with coverage for ${{ matrix.module }}..."
+            go test ./... $FLAGS -coverprofile=coverage.out -covermode=atomic
+          else
+            echo "Running tests for ${{ matrix.module }}..."
+            go test ./... $FLAGS
+          fi
+
+      - name: Upload Coverage Artifact
+        if: ${{ inputs.run_coverage == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.module }}
+          path: ${{ matrix.module }}/coverage.out
