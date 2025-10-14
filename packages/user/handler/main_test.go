@@ -14,7 +14,8 @@ import (
 )
 
 var connectionHost = ""
-var parrallel = true
+
+// var parrallel = true
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -50,18 +51,20 @@ func getConn() (*gocql.Session, error) {
 	return database.ConnectLocal(connectionHost)
 }
 
-func cleanup() {
-	session, err := database.ConnectLocal(connectionHost)
-	if err != nil {
-		return
-	}
-	defer session.Close()
+// TODO- remove unused methods
 
-	session.Query("DELETE FROM init_sh_keyspace.test_table WHERE id = 1")
-}
+// func cleanup() {
+// 	session, err := database.ConnectLocal(connectionHost)
+// 	if err != nil {
+// 		return
+// 	}
+// 	defer session.Close()
 
-func checkParallel(t *testing.T) {
-	if parrallel {
-		t.Parallel()
-	}
-}
+// 	session.Query("DELETE FROM init_sh_keyspace.test_table WHERE id = 1")
+// }
+
+// func checkParallel(t *testing.T) {
+// 	if parrallel {
+// 		t.Parallel()
+// 	}
+// }
