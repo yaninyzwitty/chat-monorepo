@@ -20,16 +20,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
 
-      # ✅ safer module detection with fallback if mono-repo without multiple modules
-      - name: Detect Go modules
+    # ✅ Detect all Go modules across the repo
+      - name: Detect Go Modules
         id: set-modules
         shell: bash
         run: |
-          MODULE_DIRS=$(go list -m -json 2>/dev/null | jq -s '[.[].Dir]')
-          if [[ -z "$MODULE_DIRS" || "$MODULE_DIRS" == "[]" ]]; then
-            MODULE_DIRS='["."]'
-          fi
-          echo "modules=${MODULE_DIRS}" >> "$GITHUB_OUTPUT"
+          MODULES=$(find . -name 'go.mod' -not -path '*/vendor/*' -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')
+          echo "Detected modules: $MODULES"
+          echo "modules=$MODULES" >> $GITHUB_OUTPUT
+
 
   golangci-lint:
     needs: detect-modules
