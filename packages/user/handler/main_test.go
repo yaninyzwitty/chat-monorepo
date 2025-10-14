@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/gocql/gocql"
@@ -20,7 +19,7 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	wd, _ := os.Getwd() // wd = .../packages/user/handler
+	wd, _ := os.Getwd()
 
 	cassandraContainer, err := cassandra.Run(
 		ctx,
@@ -54,20 +53,4 @@ func TestMain(m *testing.M) {
 
 func getConn() (*gocql.Session, error) {
 	return database.ConnectLocal(connectionHost)
-}
-
-func moduleRoot() string {
-	wd, _ := os.Getwd() // e.g. /path/project/packages/user/handler
-
-	// climb up until you find a go.mod → that's module root
-	for {
-		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
-			return wd
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			panic("could not find module root (go.mod)")
-		}
-		wd = parent
-	}
 }
