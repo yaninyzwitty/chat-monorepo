@@ -20,8 +20,9 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	testdataPath := filepath.Join("..", "testdata") // relative to handler/
-	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(testdataPath, "init.sh"))
+	root := filepath.Join("..") // go back to module root (packages/user)
+	testdataPath := filepath.Join(root, "testdata", "init.sh")
+	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Dir(testdataPath), "init.sh"))
 
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
