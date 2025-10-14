@@ -19,12 +19,9 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	wd, _ := os.Getwd()
-
 	cassandraContainer, err := cassandra.Run(
 		ctx,
 		"cassandra:4.1.3",
-		cassandra.WithInitScripts(wd, "init.sh"),
 	)
 
 	defer func() {
