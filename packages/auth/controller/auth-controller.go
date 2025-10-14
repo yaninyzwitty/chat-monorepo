@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -36,12 +35,8 @@ func NewAuthController(ctx context.Context, cfg *config.Config, reg *prometheus.
 		RefreshTokenStore: rts,
 	}
 
-	if os.Getenv("CASSANDRA_LOCAL") == "true" {
-		// Use the same host/port as your test setup
-		c.Db = database.ConnectLocal("127.0.0.1", 9042)
-	} else {
-		c.Db = database.ConnectAstra(cfg, token)
-	}
+	c.Db = database.ConnectAstra(cfg, token)
+
 	return c
 }
 
