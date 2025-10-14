@@ -5,87 +5,61 @@ import (
 	"log/slog"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cassandra"
+	database "github.com/yaninyzwitty/chat/packages/db"
 )
 
-var (
-	session   *gocql.Session
-	parallel  = false
-	cqlScript = "../../db/testdata/init.cql"
-)
+var connectionHost = ""
+var parrallel = true
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	// Start Cassandra container
-	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3",
-		cassandra.WithInitScripts(cqlScript),
-	)
-	if err != nil {
-		slog.Error("failed to create cassandra instance", "error", err)
-		os.Exit(1)
-	}
+	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts("testdata", "init.sh"))
 
-	// Cleanup on exit
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
 			slog.Error("failed to terminate container", "error", err)
+			os.Exit(1)
 		}
+
 	}()
 
-	// Get connection info
-	connectionHost, err := cassandraContainer.ConnectionHost(ctx)
+	if err != nil {
+		slog.Error("failed to load container", "error", err)
+		os.Exit(1)
+	}
+
+	connectionHost, err = cassandraContainer.ConnectionHost(ctx)
 	if err != nil {
 		slog.Error("failed to get connection host", "error", err)
 		os.Exit(1)
 	}
 
-	port, err := cassandraContainer.MappedPort(ctx, "9042/tcp")
-	if err != nil {
-		slog.Error("failed to get mapped port", "error", err)
-		os.Exit(1)
-	}
+	res := m.Run()
+	os.Exit(res)
 
-	// Connect to Cassandra via gocql
-	cluster := gocql.NewCluster(connectionHost)
-	cluster.Port = port.Int()
-	cluster.Keyspace = "chat" // make sure this matches your init.cql
-	cluster.Consistency = gocql.Quorum
-	cluster.Timeout = 30 * time.Second
-	cluster.ConnectTimeout = 30 * time.Second
-
-	session, err = cluster.CreateSession()
-	if err != nil {
-		slog.Error("failed to connect to cassandra", "error", err)
-		os.Exit(1)
-	}
-
-	// Run tests
-	code := m.Run()
-
-	// Close Cassandra session
-	session.Close()
-
-	os.Exit(code)
 }
 
-func Cleanup() {
-	// TODO -- check of
-	if err := session.Query("TRUNCATE chat.users").Exec(); err != nil {
-		slog.Warn("cleanup failed", "error", err)
-	}
+func getConn() (*gocql.Session, error) {
+	return database.ConnectLocal(connectionHost)
 }
 
-func CheckParallel(t *testing.T) {
-	if parallel {
+func cleanup() {
+	session, err := database.ConnectLocal(connectionHost)
+	if err != nil {
+		return
+	}
+	defer session.Close()
+
+	session.Query("DELETE FROM init_sh_keyspace.test_table WHERE id = 1")
+}
+
+func checkParallel(t *testing.T) {
+	if parrallel {
 		t.Parallel()
 	}
-}
-
-func GetConnection(ctx context.Context) (*gocql.Session, error) {
-	return session, nil
 }

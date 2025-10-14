@@ -35,18 +35,12 @@ func ConnectAstra(cfg *config.Config, token string) *gocql.Session {
 
 }
 
-func ConnectLocal(host string, port int) *gocql.Session {
-	if host == "" {
-		host = LOCAL_HOST
-	}
+func ConnectLocal(host string) (*gocql.Session, error) {
 	cluster := gocql.NewCluster(host)
-	cluster.Port = LOCAL_PORT
-	cluster.Keyspace = "system" // system is alreasdy created will ease in testing
+	cluster.Keyspace = "init_sh_keyspace"
 	cluster.Consistency = gocql.Quorum
 	cluster.Timeout = 30 * time.Second
 	cluster.ConnectTimeout = 30 * time.Second
 
-	session, err := cluster.CreateSession()
-	util.Fail(err, "failed to create local session")
-	return session
+	return cluster.CreateSession()
 }
