@@ -88,9 +88,15 @@ jobs:
             go test ./... $FLAGS
           fi
 
+      - name: Sanitize module name
+        id: sanitize
+        run: |
+          SAFE_NAME=$(echo "${{ matrix.module }}" | sed 's/[\/\.]/-/g')
+          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+
       - name: Upload Coverage Artifact
         if: ${{ inputs.run_coverage == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.module }}
+          name: coverage-${{ steps.sanitize.outputs.safe_name }}
           path: ${{ matrix.module }}/coverage.out

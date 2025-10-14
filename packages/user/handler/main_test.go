@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gocql/gocql"
@@ -18,7 +19,8 @@ var parrallel = true
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts("testdata", "init.sh"))
+	testdataPath := filepath.Join("..", "testdata") // relative to handler/
+	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(testdataPath, "init.sh"))
 
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
