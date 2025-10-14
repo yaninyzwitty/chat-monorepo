@@ -43,4 +43,5 @@ func ConnectLocal(host string) (*gocql.Session, error) {
 	cluster.ConnectTimeout = 30 * time.Second
 
 	return cluster.CreateSession()
+	// slog another commit
 }
