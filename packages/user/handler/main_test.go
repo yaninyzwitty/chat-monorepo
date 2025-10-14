@@ -20,8 +20,14 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	testdataPath := filepath.Join("..", "testdata") // relative to handler/
-	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(testdataPath, "init.sh"))
+	root := moduleRoot() // -> /path/project/packages/user
+	initPath := filepath.Join(root, "testdata", "init.sh")
+
+	cassandraContainer, err := cassandra.Run(
+		ctx,
+		"cassandra:4.1.3",
+		cassandra.WithInitScripts(filepath.Dir(initPath), "init.sh"),
+	)
 
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
@@ -68,3 +74,19 @@ func getConn() (*gocql.Session, error) {
 // 		t.Parallel()
 // 	}
 // }
+
+func moduleRoot() string {
+	wd, _ := os.Getwd() // e.g. /path/project/packages/user/handler
+
+	// climb up until you find a go.mod → that's module root
+	for {
+		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
+			return wd
+		}
+		parent := filepath.Dir(wd)
+		if parent == wd {
+			panic("could not find module root (go.mod)")
+		}
+		wd = parent
+	}
+}
