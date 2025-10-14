@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/gocql/gocql"
@@ -20,10 +19,10 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-
-	root := filepath.Join("..") // go back to module root (packages/user)
-	testdataPath := filepath.Join(root, "testdata", "init.sh")
-	cassandraContainer, err := cassandra.Run(ctx, "cassandra:4.1.3", cassandra.WithInitScripts(filepath.Dir(testdataPath), "init.sh"))
+	cassandraContainer, err := cassandra.Run(
+		ctx,
+		"cassandra:4.1.3",
+	)
 
 	defer func() {
 		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
@@ -51,38 +50,4 @@ func TestMain(m *testing.M) {
 
 func getConn() (*gocql.Session, error) {
 	return database.ConnectLocal(connectionHost)
-}
-
-// TODO- remove unused methods
-
-// func cleanup() {
-// 	session, err := database.ConnectLocal(connectionHost)
-// 	if err != nil {
-// 		return
-// 	}
-// 	defer session.Close()
-
-// 	session.Query("DELETE FROM init_sh_keyspace.test_table WHERE id = 1")
-// }
-
-// func checkParallel(t *testing.T) {
-// 	if parrallel {
-// 		t.Parallel()
-// 	}
-// }
-
-func moduleRoot() string {
-	wd, _ := os.Getwd() // e.g. /path/project/packages/user/handler
-
-	// climb up until you find a go.mod → that's module root
-	for {
-		if _, err := os.Stat(filepath.Join(wd, "go.mod")); err == nil {
-			return wd
-		}
-		parent := filepath.Dir(wd)
-		if parent == wd {
-			panic("could not find module root (go.mod)")
-		}
-		wd = parent
-	}
 }
