@@ -1,3 +1,5 @@
-services/user/cmd/server/.env
-env
+services\user\cmd\server\.env
+packages\user\.env
+packages\auth\.env
+.env
 go.work.sum
