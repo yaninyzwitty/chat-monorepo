@@ -28,7 +28,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name: "success:create_user",
 			setup: func(ctx context.Context, db *gocql.Session) error {
-				return db.Query("TRUNCATE init_sh_keyspace.users").Exec()
+				return db.Query("TRUNCATE chat.users").Exec()
 			},
 			input: struct {
 				user   *userv1.User
@@ -97,7 +97,7 @@ func TestGetUser(t *testing.T) {
 		{
 			name: "success:get_existing_user",
 			setup: func(ctx context.Context, db *gocql.Session) error {
-				return db.Query(`INSERT INTO init_sh_keyspace.users (id, name, email, alias_name, created_at, updated_at, password)
+				return db.Query(`INSERT INTO chat.users (id, name, email, alias_name, created_at, updated_at, password)
 					VALUES (?, ?, ?, ?, toTimestamp(now()), toTimestamp(now()), ?)`,
 					validID, "Alice", "alice@example.com", "Ali", "pwd").Exec()
 			},
@@ -150,9 +150,9 @@ func TestListUsers(t *testing.T) {
 		{
 			name: "success:list_first_page",
 			setup: func(ctx context.Context, db *gocql.Session) error {
-				_ = db.Query("TRUNCATE init_sh_keyspace.users").Exec()
-				for i := 0; i < 5; i++ {
-					_ = db.Query(`INSERT INTO init_sh_keyspace.users (id, name, email, alias_name, created_at, updated_at, password)
+				_ = db.Query("TRUNCATE chat.users").Exec()
+				for i := range 5 {
+					_ = db.Query(`INSERT INTO chat.users (id, name, email, alias_name, created_at, updated_at, password)
 						VALUES (?, ?, ?, ?, toTimestamp(now()), toTimestamp(now()), ?)`,
 						gocql.TimeUUID(), fmt.Sprintf("User%d", i), fmt.Sprintf("u%d@example.com", i), "Alias", "pwd").Exec()
 				}

@@ -7,8 +7,10 @@ WITH replication = {
 
 USE chat;
 
--- Users table matching Go handler
-CREATE TABLE IF NOT EXISTS users (
+-- Users table matching Go handler expectations
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
     id UUID PRIMARY KEY,
     name TEXT,
     alias_name TEXT,
@@ -17,10 +19,3 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT,
     password TEXT
 );
-
--- Optional: Insert some seed rows
-INSERT INTO users (id, name, alias_name, created_at, updated_at, email, password)
-VALUES (uuid(), 'Alice', 'ali', toTimestamp(now()), toTimestamp(now()), 'alice@example.com', 'pass123');
-
-INSERT INTO users (id, name, alias_name, created_at, updated_at, email, password)
-VALUES (uuid(), 'Bob', 'bobby', toTimestamp(now()), toTimestamp(now()), 'bob@example.com', 'pass456');
