@@ -15,29 +15,24 @@ import (
 
 var connectionHost = ""
 
-// var parrallel = true
-
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	cassandraContainer, err := cassandra.Run(ctx,
 		"cassandra:4.1.3",
 		cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")),
-		cassandra.WithConfigFile(filepath.Join("testdata", "init.yaml")),
 	)
-
-	defer func() {
-		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
-			slog.Error("failed to terminate container", "error", err)
-			os.Exit(1)
-		}
-
-	}()
 
 	if err != nil {
 		slog.Error("failed to load container", "error", err)
 		os.Exit(1)
 	}
+
+	defer func() {
+		if err := testcontainers.TerminateContainer(cassandraContainer); err != nil {
+			slog.Error("failed to terminate container", "error", err)
+		}
+	}()
 
 	connectionHost, err = cassandraContainer.ConnectionHost(ctx)
 	if err != nil {
@@ -47,7 +42,6 @@ func TestMain(m *testing.M) {
 
 	res := m.Run()
 	os.Exit(res)
-
 }
 
 func getConn() (*gocql.Session, error) {
