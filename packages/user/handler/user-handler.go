@@ -23,6 +23,10 @@ func NewUserHandler(db *gocql.Session) *UserHandler {
 func (h *UserHandler) CreateUser(ctx context.Context, user *userv1.User, userPassword string) error {
 	now := time.Now()
 
+	if user.Id == "" {
+		return status.Error(codes.InvalidArgument, "user ID cannot be empty")
+	}
+
 	if err := h.Db.Query(
 		`INSERT INTO chat.users (id, name, alias_name, created_at, updated_at, email, password) 
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -76,8 +80,10 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 		pageSize = 10
 	}
 
+	// ✅ LIMIT added to enforce strict row count (fixes test failure)
 	q := h.Db.Query(
-		`SELECT id, name, alias_name, created_at, updated_at, email FROM chat.users`,
+		`SELECT id, name, alias_name, created_at, updated_at, email FROM chat.users LIMIT ?`,
+		pageSize,
 	).PageSize(pageSize)
 
 	if len(pageToken) > 0 {
@@ -96,7 +102,6 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 		email     string
 	)
 
-	// ✅ SCAN FIRST
 	for iter.Scan(&id, &name, &aliasName, &createdAt, &updatedAt, &email) {
 		users = append(users, &userv1.User{
 			Id:        id.String(),
@@ -108,14 +113,14 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 		})
 	}
 
-	// ✅ THEN CLOSE ITERATOR ONCE
+	nextPage := iter.PageState()
+
 	if err := iter.Close(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
 	}
 
 	return &userv1.ListUsersResponse{
 		Users:     users,
-		PageToken: iter.PageState(), // ✅ PageState still works after Close
+		PageToken: nextPage,
 	}, nil
-
 }

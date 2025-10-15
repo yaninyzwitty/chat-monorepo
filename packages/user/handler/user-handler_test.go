@@ -151,7 +151,7 @@ func TestListUsers(t *testing.T) {
 			name: "success:list_first_page",
 			setup: func(ctx context.Context, db *gocql.Session) error {
 				_ = db.Query("TRUNCATE chat.users").Exec()
-				for i := 0; i < 5; i++ {
+				for i := range 5 {
 					_ = db.Query(`INSERT INTO chat.users (id, name, email, alias_name, created_at, updated_at, password)
 						VALUES (?, ?, ?, ?, toTimestamp(now()), toTimestamp(now()), ?)`,
 						gocql.TimeUUID(), fmt.Sprintf("User%d", i), fmt.Sprintf("u%d@example.com", i), "Alias", "pwd").Exec()
