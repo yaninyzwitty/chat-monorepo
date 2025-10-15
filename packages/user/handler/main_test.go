@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gocql/gocql"
@@ -19,9 +20,10 @@ var connectionHost = ""
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 
-	cassandraContainer, err := cassandra.Run(
-		ctx,
+	cassandraContainer, err := cassandra.Run(ctx,
 		"cassandra:4.1.3",
+		cassandra.WithInitScripts(filepath.Join("testdata", "init.cql")),
+		cassandra.WithConfigFile(filepath.Join("testdata", "init.yaml")),
 	)
 
 	defer func() {
