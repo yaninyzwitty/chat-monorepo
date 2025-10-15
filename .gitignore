@@ -3,3 +3,4 @@ packages\user\.env
 packages\auth\.env
 .env
 go.work.sum
+.dontcommit
