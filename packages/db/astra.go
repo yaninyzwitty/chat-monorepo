@@ -38,7 +38,7 @@ func ConnectAstra(cfg *config.Config, token string) *gocql.Session {
 
 func ConnectLocal(host string) (*gocql.Session, error) {
 	cluster := gocql.NewCluster(host)
-	cluster.Keyspace = "init_sh_keyspace" // ✅ Set correct keyspace
+	cluster.Keyspace = "chat" // ✅ Set correct keyspace
 	cluster.Consistency = gocql.Quorum
 	cluster.Timeout = 30 * time.Second
 	cluster.ConnectTimeout = 30 * time.Second
@@ -49,10 +49,10 @@ func ConnectLocal(host string) (*gocql.Session, error) {
 	}
 
 	queries := []string{
-		`CREATE KEYSPACE IF NOT EXISTS init_sh_keyspace 
+		`CREATE KEYSPACE IF NOT EXISTS chat 
 		 WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}`,
 		// ✅ No `USE` needed, session already bound to keyspace
-		`CREATE TABLE IF NOT EXISTS init_sh_keyspace.users (
+		`CREATE TABLE IF NOT EXISTS chat.users (
 			id UUID PRIMARY KEY,
 			name TEXT,
 			alias_name TEXT,

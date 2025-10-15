@@ -6,7 +6,7 @@ WITH replication = {
 };
 
 -- Use keyspace
-USE init_sh_keyspace;
+USE chat;
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
