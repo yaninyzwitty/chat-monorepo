@@ -5,11 +5,11 @@ on:
 
 permissions:
   contents: read
-  id-token: write      
+  id-token: write
 
 env:
-  GO_VERSION: '1.25.0'              
-  GOLANGCI_LINT_VERSION: 'v2.4.0' 
+  GO_VERSION: "1.25.0"
+  GOLANGCI_LINT_VERSION: "v2.4.0"
 
 jobs:
   detect-modules:
@@ -20,15 +20,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v5
 
-    # ✅ Detect all Go modules across the repo
+      # ✅ Detect all Go modules across the repo
       - name: Detect Go Modules
         id: set-modules
         shell: bash
         run: |
-          MODULES=$(find . -name 'go.mod' -not -path '*/vendor/*' -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')
+          set -Eeuo pipefail
+          MODULES="$(find . -name 'go.mod' -not -path '*/vendor/*' -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')"
           echo "Detected modules: $MODULES"
-          echo "modules=$MODULES" >> $GITHUB_OUTPUT
-
+          echo "modules=$MODULES" >> "$GITHUB_OUTPUT"
 
   golangci-lint:
     needs: detect-modules
@@ -72,4 +72,4 @@ jobs:
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.module }}
-          args: --timeout=5m  # ✅ avoids stuck jobs in CI
+          args: --timeout=5m # ✅ avoids stuck jobs in CI

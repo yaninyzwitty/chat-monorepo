@@ -100,7 +100,7 @@ func run(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to listen on %q: %w", address, err)
 		}
-		slog.Info("starting [gRPC] user service",
+		slog.Info("starting [gRPC] auth service",
 			slog.String("address", address),
 		)
 		if err := grpcServer.Serve(lis); err != nil {
