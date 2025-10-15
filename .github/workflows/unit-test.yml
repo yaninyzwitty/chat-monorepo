@@ -75,24 +75,25 @@ jobs:
         working-directory: ${{ matrix.module }}
         shell: bash
         run: |
-          FLAGS=""
-          if [[ "${{ inputs.enable_race_detector }}" == "true" ]]; then
-            FLAGS="$FLAGS -race"
-          fi
+          set -Eeuo pipefail
+           FLAGS=()
+           if [[ "${{ inputs.enable_race_detector }}" == "true" ]]; then
+             FLAGS+=(-race)
+           fi
 
-          if [[ "${{ inputs.run_coverage }}" == "true" ]]; then
-            echo "Running tests with coverage for ${{ matrix.module }}..."
-            go test ./... $FLAGS -coverprofile=coverage.out -covermode=atomic
-          else
-            echo "Running tests for ${{ matrix.module }}..."
-            go test ./... $FLAGS
-          fi
+           if [[ "${{ inputs.run_coverage }}" == "true" ]]; then
+             echo "Running tests with coverage for ${{ matrix.module }}..."
+             go test ./... "${FLAGS[@]}" -coverprofile=coverage.out -covermode=atomic
+           else
+             echo "Running tests for ${{ matrix.module }}..."
+             go test ./... "${FLAGS[@]}"
+           fi
 
       - name: Sanitize module name
         id: sanitize
         run: |
           SAFE_NAME=$(echo "${{ matrix.module }}" | sed 's/[\/\.]/-/g')
-          echo "safe_name=$SAFE_NAME" >> $GITHUB_OUTPUT
+          echo "safe_name=$SAFE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload Coverage Artifact
         if: ${{ inputs.run_coverage == 'true' }}

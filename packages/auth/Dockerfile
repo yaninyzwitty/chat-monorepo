@@ -33,11 +33,10 @@ COPY packages/db/go.mod packages/db/go.sum ./
 RUN go mod download
 COPY packages/db/ .
 
-# -------------------------
-WORKDIR /build/packages/user
-COPY packages/user/go.mod packages/user/go.sum Makefile ./
+WORKDIR /build/packages/auth
+COPY packages/auth/go.mod packages/auth/go.sum Makefile ./
 RUN go mod download
-COPY packages/user/ .
+COPY packages/auth/ .
 
 # -------------------------
 # Copy generated code + protos

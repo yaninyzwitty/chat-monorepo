@@ -38,6 +38,3 @@ jobs:
         if: always()
         with:
           comment_mode: off
-          fail_on: 'errors'
-          files: "artifacts/**/*.xml"
-
