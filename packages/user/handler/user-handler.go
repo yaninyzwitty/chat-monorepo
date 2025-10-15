@@ -85,10 +85,6 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 	}
 
 	iter := q.Iter()
-	if err := iter.Close(); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to close iter: %v", err)
-
-	}
 
 	var users []*userv1.User
 	var (
@@ -100,23 +96,26 @@ func (h *UserHandler) ListUsers(ctx context.Context, pageLimit int32, pageToken 
 		email     string
 	)
 
+	// ✅ SCAN FIRST
 	for iter.Scan(&id, &name, &aliasName, &createdAt, &updatedAt, &email) {
 		users = append(users, &userv1.User{
 			Id:        id.String(),
 			Name:      name,
 			AliasName: aliasName,
+			Email:     email,
 			CreatedAt: timestamppb.New(createdAt),
 			UpdatedAt: timestamppb.New(updatedAt),
-			Email:     email,
 		})
 	}
 
+	// ✅ THEN CLOSE ITERATOR ONCE
 	if err := iter.Close(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list users: %v", err)
 	}
 
 	return &userv1.ListUsersResponse{
 		Users:     users,
-		PageToken: iter.PageState(),
+		PageToken: iter.PageState(), // ✅ PageState still works after Close
 	}, nil
+
 }
