@@ -140,7 +140,7 @@ func (c *AuthController) ValidateToken(ctx context.Context, req *authv1.Validate
 	start := time.Now()
 	const op = "validate_token"
 
-	claims, err := myJwt.ValidateJWT(req.AccessToken)
+	claims, err := myJwt.ValidateJWT(req.GetAccessToken())
 	if err != nil {
 		c.observeError(op, "jwt")
 		return &authv1.ValidateTokenResponse{Valid: false}, nil

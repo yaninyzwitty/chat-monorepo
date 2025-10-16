@@ -10,6 +10,8 @@ import (
 type Config struct {
 	Debug          bool           `yaml:"debug"`
 	AuthPort       int            `yaml:"authPort"`
+	AuthClientPort int            `yaml:"authClientPort"`
+	UserClientPort int            `yaml:"userClientPort"`
 	UserPort       int            `yaml:"userPort"`
 	MetricsPort1   int            `yaml:"metricsPort1"`
 	MetricsPort2   int            `yaml:"metricsPort2"`

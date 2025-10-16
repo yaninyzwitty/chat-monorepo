@@ -1,14 +1,15 @@
 ---
 debug: true
 authPort: 50051
+authClientPort: 8081
 userPort: 50052
+userClientPort: 8082
 metricsPort1: 8081
 metricsPort2: 8082
 db:
   username: token
   path: ./secure-connect-chat.zip
   timeout: 30
-  # Todo check if they must be here
-  # for local testing
+  # TODO-check if they must be here
   localHost: 127.0.0.1
   localDBPort: 9042

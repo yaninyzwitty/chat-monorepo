@@ -1,7 +1,9 @@
 ---
 debug: true
 authPort: 50051
+authClientPort: 8081
 userPort: 50052
+userClientPort: 8082
 metricsPort1: 8081
 metricsPort2: 8082
 db:
