@@ -56,9 +56,8 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	// REST router
 	mux := http.NewServeMux()
 
-	// ✅ grpc.Dial is correct
-	authAddr := fmt.Sprintf("localhost:%d", cfg.AuthClientPort)
-	authConn, err := grpc.Dial(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	authAddr := fmt.Sprintf("localhost:%d", cfg.AuthPort)
+	authConn, err := grpc.NewClient(authAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return fmt.Errorf("failed to dial grpc auth server: %w", err)
 	}
@@ -72,7 +71,7 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	// Health route
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := w.Write([]byte("OK")); err != nil {
-			slog.Error("failed to write response", "error", err)
+			logger.Error("failed to write health response", slog.String("error", err.Error()))
 		}
 	})
 
@@ -171,10 +170,14 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	})
 
 	// Wrap mux with CORS
-	handler := cors.AllowAll().Handler(mux)
-
+	handler := cors.New(cors.Options{
+		//				TODO -- ADJUST // AllowedOrigins:   []string{"http://localhost:3000"}, // adjust as needed
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(mux)
 	// Server setup
-	serverAddr := fmt.Sprintf(":%d", cfg.AuthPort)
+	serverAddr := fmt.Sprintf(":%d", cfg.AuthClientPort)
 	srv := &http.Server{Addr: serverAddr, Handler: handler}
 
 	go func() {
