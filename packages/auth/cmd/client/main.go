@@ -62,12 +62,18 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to dial grpc auth server: %w", err)
 	}
-	defer authConn.Close()
+	defer func() {
+		if err := authConn.Close(); err != nil {
+			slog.Error("failed to close authConn", "error", err)
+		}
+	}()
 	authClient := authv1.NewAuthServiceClient(authConn)
 
 	// Health route
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			slog.Error("failed to write response", "error", err)
+		}
 	})
 
 	// ---- LOGIN ----
@@ -187,7 +193,9 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(payload)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		slog.Error("failed to encode JSON response", "error", err)
+	}
 }
 
 func writeGrpcError(w http.ResponseWriter, err error) {

@@ -62,12 +62,21 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("failed to dial grpc auth server: %w", err)
 	}
-	defer userConn.Close()
+	defer func() {
+
+		if err := userConn.Close(); err != nil {
+			slog.Error("failed to close", "error", err)
+			os.Exit(1)
+		}
+	}()
+
 	userClient := userv1.NewUserServiceClient(userConn)
 
 	// Health route
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			slog.Error("failed to write response", "error", err)
+		}
 	})
 	mux.HandleFunc("POST /users", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -110,7 +119,9 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 
 		// Return JSON response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp.User)
+		if err := json.NewEncoder(w).Encode(resp.User); err != nil {
+			slog.Error("failed to encode", "error", err)
+		}
 	})
 
 	mux.HandleFunc("GET /users/", func(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +145,9 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp.User)
+		if err := json.NewEncoder(w).Encode(resp.User); err != nil {
+			slog.Error("failed to encode JSON response", "error", err)
+		}
 	})
 
 	mux.HandleFunc("GET /users", func(w http.ResponseWriter, r *http.Request) {
@@ -170,10 +183,12 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"users":      resp.Users,
 			"page_token": string(resp.PageToken),
-		})
+		}); err != nil {
+			slog.Error("failed to encode JSON response", "error", err)
+		}
 	})
 
 	// Wrap mux with CORS
@@ -194,33 +209,6 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return srv.Shutdown(shutdownCtx)
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(payload)
-}
-
-func writeGrpcError(w http.ResponseWriter, err error) {
-	st, ok := status.FromError(err)
-	if !ok {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	switch st.Code() {
-	case codes.InvalidArgument:
-		http.Error(w, st.Message(), http.StatusBadRequest)
-	case codes.NotFound:
-		http.Error(w, st.Message(), http.StatusNotFound)
-	case codes.Unauthenticated:
-		http.Error(w, st.Message(), http.StatusUnauthorized)
-	case codes.PermissionDenied:
-		http.Error(w, st.Message(), http.StatusForbidden)
-	default:
-		http.Error(w, st.Message(), http.StatusInternalServerError)
-	}
 }
 
 func httpStatusFromGrpc(code codes.Code) int {
