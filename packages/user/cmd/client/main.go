@@ -56,17 +56,16 @@ func runClient(ctx context.Context, logger *slog.Logger) error {
 	// REST router
 	mux := http.NewServeMux()
 
-	// ✅ grpc.Dial is correct
-	userAddr := fmt.Sprintf("localhost:%d", cfg.UserClientPort)
+	userAddr := fmt.Sprintf("localhost:%d", cfg.UserPort)
 	userConn, err := grpc.NewClient(userAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return fmt.Errorf("failed to dial grpc auth server: %w", err)
+		return fmt.Errorf("failed to dial grpc user server: %w", err)
 	}
 	defer func() {
 
-		if err := userConn.Close(); err != nil {
-			slog.Error("failed to close", "error", err)
-			os.Exit(1)
+		if cerr := userConn.Close(); err != nil {
+			logger.Warn("grpc conn close error", slog.String("error", cerr.Error()))
+
 		}
 	}()
 
@@ -227,3 +226,12 @@ func httpStatusFromGrpc(code codes.Code) int {
 		return http.StatusInternalServerError
 	}
 }
+
+// TODO -implement this
+// func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(status)
+// 	if jerr := json.NewEncoder(w).Encode(payload); jerr != nil {
+// 		slog.Warn("failed to encode", "error", jerr)
+// 	}
+// }
